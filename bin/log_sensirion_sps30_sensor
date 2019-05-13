@@ -1,0 +1,119 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Import modules
+import pys_logging_helpers
+import py_sensirion_sps30_logger
+import time, datetime, pytz
+import os
+import gc
+
+print(str(pys_logging_helpers.date_unix(integer = True)) + ": Setting-up...")
+
+# Variable names
+response_names = [
+  "pm1", "pm2.5", "pm4", "pm10", "pm0.5_number", "pm1_number", "pm2.5_number",
+  "pm4_number", "pm10_number", "typical_particle_size"
+]
+
+# Catch programme's arguments
+arguments = py_sensirion_sps30_logger.catch_arguments()
+
+# Connect to sensor
+print(str(pys_logging_helpers.date_unix(integer = True)) + ": Connecting to sensor...")
+sensor = py_sensirion_sps30_logger.sps30.SPS30(arguments.device)
+# sensor = None
+
+# Start sensor
+print(str(pys_logging_helpers.date_unix(integer = True)) + ": Starting sensor...")
+sensor.start()
+time.sleep(0.5)
+
+print(str(pys_logging_helpers.date_unix(integer = True)) + ": Starting data logging...")
+print(
+  str(pys_logging_helpers.date_unix(integer = True)) + \
+  ": This programme will query the sensor every 5 seconds, take the mean of 12 measurements and export to disk..."
+)
+
+# Start the measurement loop
+# Allocate for measurement loop
+list_results = []
+
+try: 
+  while True:
+    
+    # Start logging at the start of the minute
+    if len(list_results) == 0 and pys_logging_helpers.date_unix(integer = True) % 60 != 0:
+      pys_logging_helpers.nice_starter(verbose = True)
+    else:
+      pass
+    
+    # Query sensor 
+    dict_results = py_sensirion_sps30_logger.get_sensirion_sps30_data(
+      sensor,
+      time_zone = "UTC", 
+      names = response_names
+    )
+    
+    print(str(pys_logging_helpers.date_unix(integer = True)) + ": Sensor queried...")
+
+    # Accumulate the measurements
+    list_results.extend([dict_results])
+
+    # Aggregation and file writing logic
+    if len(list_results) == 12: 
+
+      print(str(pys_logging_helpers.date_unix(integer = True)) + ": Aggregating data...")
+
+      dict_results_summary = py_sensirion_sps30_logger.summarise_sensirion_sps30_data(
+        list_results = list_results,
+        digits = 3,
+        names = response_names,
+        verbose = False
+      )
+
+      print(str(pys_logging_helpers.date_unix(integer = True)) + ": Exporting data...")
+
+      # Build file name
+      # Get day string from measurements
+      day_string = datetime.datetime.fromtimestamp(
+        dict_results_summary["date_unix"],
+        pytz.timezone("UTC")
+      ).strftime('%Y-%m-%d')
+
+      file_name = day_string + "_sensirion_sps30_data.csv"
+      file_name = os.path.join(arguments.output, file_name)
+      
+      # Export data
+      py_sensirion_sps30_logger.write_sensor_dict_to_csv(dict_results_summary, file_name)
+
+      # Clear list for next measurement loop
+      list_results = []
+      
+      # Garbage collection
+      pys_logging_helpers.housekeeping()
+
+    else: 
+      pass
+    
+    # Sleep for next measurement iteration
+    pys_logging_helpers.nice_waiter(5)
+
+except KeyboardInterrupt:
+  sensor.stop()
+  sensor.close.port()
+  print(str(pys_logging_helpers.date_unix(integer = True)) + ": Data logging stopped.")
+
+#response = (
+#  0.6205511093139648,
+#  1.0630933046340942,
+#  1.366864800453186,
+#  1.3966455459594727,
+#  3.2467234134674072,
+#  4.521072864532471,
+#  4.988091945648193,
+#  5.043815612792969,
+#  5.0525007247924805,
+#  0.7423572540283203
+#)
+
