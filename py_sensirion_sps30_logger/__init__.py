@@ -9,4 +9,3 @@ from log_sensirion_sps30_sensor_helpers import(
 # From Szymon Jakubiak
 # https://github.com/dobra-dobra/Python-Sensirion-SPS30
 import sps30
-

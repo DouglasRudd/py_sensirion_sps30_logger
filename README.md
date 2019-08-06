@@ -14,7 +14,8 @@ Use pip to install this package from GitHub:
 # First, install a dependency
 pip install git+https://github.com/skgrange/pys_logging_helpers
 
-# Then install the py_sensirion_sps30_logger package
+# Then install the py_sensirion_sps30_logger package, this may need sudo to 
+# install a system programme at `usr/local/bin`
 pip install git+https://github.com/skgrange/py_sensirion_sps30_logger
 ```
 
@@ -53,7 +54,3 @@ pip install git+https://github.com/skgrange/py_sensirion_sps30_logger
   # Start some logging with some options
   log_sensirion_sps30_sensor -o ~/Desktop/data -d /dev/ttyUSB1 -tz Europe/Zurich
   ```
-
-## To-do
-
-  - Add serial number to data logs and exported file names. 

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
   name = 'py_sensirion_sps30_logger',
-  version = '0.0.002',
+  version = '0.0.003',
   description = 'A programme to log data from Sensirion SPS30 particulate matter sensors',
   url = 'http://github.com/skgrange/py_sensirion_sps30_logger',
   author = 'Stuart K. Grange',

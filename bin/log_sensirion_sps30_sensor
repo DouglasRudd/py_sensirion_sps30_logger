@@ -7,8 +7,9 @@ import py_sensirion_sps30_logger
 import time, datetime, pytz
 import os
 import gc
+from distutils.util import strtobool
 
-print(str(pys_logging_helpers.date_unix(integer = True)) + ": Setting-up...")
+print(pys_logging_helpers.date_message() + "Setting-up...")
 
 # Variable names
 response_names = [
@@ -19,21 +20,44 @@ response_names = [
 # Catch programme's arguments
 arguments = py_sensirion_sps30_logger.catch_arguments()
 
+# To logical
+# aggregate = strtobool(arguments.aggregate)
+
+# To-do
+# Switch for aggregation
+#if aggregate:
+#  list_length = 12
+#  message_text = "This programme will query the sensor every 5 seconds, take the mean of 12 measurements and export to disk..."
+#else:
+#  list_length = 1
+#  message_text = "This programme wil l query the sensor every 5 seconds and export the data to disk..."
+  
+list_length = 12
+message_text = "This programme will query the sensor every 5 seconds, take the mean of 12 measurements and export to disk..."
+
 # Connect to sensor
-print(str(pys_logging_helpers.date_unix(integer = True)) + ": Connecting to sensor...")
+print(pys_logging_helpers.date_message() + "Connecting to sensor...")
 sensor = py_sensirion_sps30_logger.sps30.SPS30(arguments.device)
-# sensor = None
 
 # Start sensor
-print(str(pys_logging_helpers.date_unix(integer = True)) + ": Starting sensor...")
+print(pys_logging_helpers.date_message() + "Starting the sensor...")
 sensor.start()
 time.sleep(0.5)
 
-print(str(pys_logging_helpers.date_unix(integer = True)) + ": Starting data logging...")
+# Get sensor's serial number
+sensor_serial_number = py_sensirion_sps30_logger.sps30.SPS30.read_serial_number(sensor)
+
 print(
-  str(pys_logging_helpers.date_unix(integer = True)) + \
-  ": This programme will query the sensor every 5 seconds, take the mean of 12 measurements and export to disk..."
+  pys_logging_helpers.date_message() + \
+  "This sensor is: `" + \
+  sensor_serial_number + \
+  "`..."
 )
+
+print(pys_logging_helpers.date_message() + "Starting data logging...")
+
+# Message about programme behaviour
+print(pys_logging_helpers.date_message() + message_text)
 
 # Start the measurement loop
 # Allocate for measurement loop
@@ -51,19 +75,20 @@ try:
     # Query sensor 
     dict_results = py_sensirion_sps30_logger.get_sensirion_sps30_data(
       sensor,
+      sensor_serial_number,
       time_zone = "UTC", 
       names = response_names
     )
     
-    print(str(pys_logging_helpers.date_unix(integer = True)) + ": Sensor queried...")
+    print(pys_logging_helpers.date_message() + "Sensor queried...")
 
     # Accumulate the measurements
     list_results.extend([dict_results])
 
     # Aggregation and file writing logic
-    if len(list_results) == 12: 
+    if len(list_results) == list_length: 
 
-      print(str(pys_logging_helpers.date_unix(integer = True)) + ": Aggregating data...")
+      print(pys_logging_helpers.date_message() + "Aggregating data...")
 
       dict_results_summary = py_sensirion_sps30_logger.summarise_sensirion_sps30_data(
         list_results = list_results,
@@ -72,7 +97,7 @@ try:
         verbose = False
       )
 
-      print(str(pys_logging_helpers.date_unix(integer = True)) + ": Exporting data...")
+      print(pys_logging_helpers.date_message() + "Exporting data...")
 
       # Build file name
       # Get day string from measurements
@@ -81,7 +106,7 @@ try:
         pytz.timezone("UTC")
       ).strftime('%Y-%m-%d')
 
-      file_name = day_string + "_sensirion_sps30_data.csv"
+      file_name = sensor_serial_number + '_' + day_string + "_sensirion_sps30_data.csv"
       file_name = os.path.join(arguments.output, file_name)
       
       # Export data
@@ -102,7 +127,7 @@ try:
 except KeyboardInterrupt:
   sensor.stop()
   sensor.close.port()
-  print(str(pys_logging_helpers.date_unix(integer = True)) + ": Data logging stopped.")
+  print(pys_logging_helpers.date_message() + "Data logging stopped.")
 
 #response = (
 #  0.6205511093139648,
@@ -116,4 +141,3 @@ except KeyboardInterrupt:
 #  5.0525007247924805,
 #  0.7423572540283203
 #)
-

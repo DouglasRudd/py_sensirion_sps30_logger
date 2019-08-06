@@ -34,18 +34,10 @@
 import serial, struct, time
 from operator import invert
 
-
 class SPS30:
-    
     def __init__(self, port):
         self.port = port
-        self.ser = serial.Serial(
-            self.port, 
-            baudrate = 115200, 
-            stopbits = 1, 
-            parity = "N", 
-            timeout = 2
-        )
+        self.ser = serial.Serial(self.port, baudrate=115200, stopbits=1, parity="N",  timeout=2)
     
     def start(self):
         self.ser.write([0x7E, 0x00, 0x00, 0x02, 0x01, 0x03, 0xF9, 0x7E])
@@ -83,6 +75,29 @@ class SPS30:
         except struct.error:
             data = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
         return data
+    
+    def read_serial_number(self):
+        self.ser.flushInput()
+        self.ser.write([0x7E, 0x00, 0xD0, 0x01, 0x03, 0x2B, 0x7E])
+        toRead = self.ser.inWaiting()
+        while toRead < 24:
+            toRead = self.ser.inWaiting()
+            time.sleep(0.1)
+        raw = self.ser.read(toRead)
+        
+        # Reverse byte-stuffing
+        if b'\x7D\x5E' in raw:
+            raw = raw.replace(b'\x7D\x5E', b'\x7E')
+        if b'\x7D\x5D' in raw:
+            raw = raw.replace(b'\x7D\x5D', b'\x7D')
+        if b'\x7D\x31' in raw:
+            raw = raw.replace(b'\x7D\x31', b'\x11')
+        if b'\x7D\x33' in raw:
+            raw = raw.replace(b'\x7D\x33', b'\x13')
+        
+        # Discard header, tail and decode
+        serial_number = raw[5:-3].decode('ascii')
+        return serial_number
 
     def close_port(self):
         self.ser.close()

@@ -8,23 +8,24 @@ import json
 import argparse
 import pys_logging_helpers
 
+
 # Define some helpers
 def write_sensor_dict_to_csv(dict, file):
   # Create file, write header and write row
   if not os.path.isfile(file): 
-    with open(file, "wb") as f:
+    with open(file, 'wb') as f:
       w = csv.DictWriter(f, dict.keys())
       w.writeheader()
       w.writerow(dict)
   
   # Just write row
   else: 
-    with open(file, "a") as f:
+    with open(file, 'a') as f:
       w = csv.DictWriter(f, dict.keys())
       w.writerow(dict)
 
 
-def get_sensirion_sps30_data(sensor, time_zone, names):
+def get_sensirion_sps30_data(sensor, serial_number, time_zone, names):
 
   # Get measurement date
   date = time.time()
@@ -36,10 +37,11 @@ def get_sensirion_sps30_data(sensor, time_zone, names):
   date_string = datetime.datetime.fromtimestamp(
     date_floor,
     pytz.timezone(time_zone)
-  ).strftime("%Y-%m-%d %H:%M:%S %Z")
+  ).strftime('%Y-%m-%d %H:%M:%S %Z')
   
    # Create an extra dictionary
   dict_dates = OrderedDict([
+    ('serial_number', serial_number),
     ('date', date_string),
     ('date_unix', date_floor)
   ])
@@ -62,7 +64,7 @@ def get_sensirion_sps30_data(sensor, time_zone, names):
   )
   
   # Arrange variables 
-  names_with_dates = ["date", "date_unix"] + names
+  names_with_dates = ['serial_number', 'date', 'date_unix'] + names
 
   dict_results = OrderedDict(
     sorted(
@@ -79,14 +81,16 @@ def summarise_sensirion_sps30_data(list_results, digits, names,
 
   # Create an extra dictionary, use first dates
   dict_dates = OrderedDict([
-    ('date', list_results[0]["date"]),
-    ('date_unix', list_results[0]["date_unix"])
+    ('serial_number', list_results[0]['serial_number']),
+    ('date', list_results[0]['date']),
+    ('date_unix', list_results[0]['date_unix'])
   ])
 
   # Remove dates from dictionary for aggregation
   for d in list_results:
-    d.pop("date", None)
-    d.pop("date_unix", None)
+    d.pop('serial_number', None)
+    d.pop('date', None)
+    d.pop('date_unix', None)
 
   # Get n
   count = float(len(list_results))
@@ -108,7 +112,7 @@ def summarise_sensirion_sps30_data(list_results, digits, names,
   )
     
   # Arrange variables 
-  names_with_dates = ["date", "date_unix"] + names
+  names_with_dates = ['serial_number', 'date', 'date_unix'] + names
 
   dict_results_summary = OrderedDict(
     sorted(
@@ -152,6 +156,14 @@ def catch_arguments():
     help = "Which time zone will the date be stored in? As an Olison time-zone \
     string. Epoch time is also stored so time-zone information can always be \
     found from the data files."
+  )
+  
+  parser.add_argument(
+    "-a", 
+    "--aggregate", 
+    default = True,
+    help = "Should the observations be aggregated to a minute before being \
+    written? If False, no averaging will be done"
   )
   
   # Add arguments to object to be called in programme
